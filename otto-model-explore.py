@@ -3,7 +3,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier, ExtraTreesClassifier 
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier 
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -57,23 +57,23 @@ def validate_model(model, validation_x, validation_y):
     print(" -- {} Multiclass logloss on validation set: {:.4f}.".format(type(model).__name__, score))
     return score
 
-def train_rf(training_x, training_y, n_est=10):
-    clf = RandomForestClassifier(n_jobs=-1, n_estimators=n_est)
+def train_rf(training_x, training_y, n_est=10, max_d=5, max_f='auto'):
+    clf = RandomForestClassifier(n_jobs=-1, n_estimators=n_est, max_depth=max_d, max_features=max_f)
     clf.fit(training_x, training_y)
     return clf
     
-def train_ada(training_x, training_y, n_est=10):
-    clf = AdaBoostClassifier(n_estimators=n_est)
+def train_ex(training_x, training_y, n_est=10, max_d=5, max_f='auto'):
+    clf = ExtraTreesClassifier(n_jobs=-1, n_estimators=n_est, max_depth=max_d, max_features=max_f)
     clf.fit(training_x, training_y)
     return clf
+    
+#def train_ada(training_x, training_y, n_est=10):
+#    clf = AdaBoostClassifier(n_estimators=n_est)
+#    clf.fit(training_x, training_y)
+#    return clf
     
 def train_grad(training_x, training_y, n_est=10):
     clf = GradientBoostingClassifier(n_estimators=n_est)
-    clf.fit(training_x, training_y)
-    return clf
-
-def train_ex(training_x, training_y, n_est=10):
-    clf = ExtraTreesClassifier(n_jobs=-1, n_estimators=n_est)
     clf.fit(training_x, training_y)
     return clf
 
@@ -96,31 +96,30 @@ def main():
     print(" - Start.")
     X_train, X_valid, y_train, y_valid = load_train_data()
     
+    # set n_estimators to be 650, and now check max_depth and  max_features
+    poss_max_features = ['sqrt']
+    n_est = 650
     results = []
-    for i in range(100,1000,50): 
+    for max_d in range(50,100,3): 
+        for idx, max_f in enumerate(poss_max_features):
         
-        print 'i = {}'.format(i)
-        rf_model = train_rf(X_train, y_train, i)
-        y_true = encoder(rf_model, y_valid)
-        score = validate_model(rf_model, X_valid, y_true)
-        results.append({'score':score,'model':type(rf_model).__name__,'n_estimators':i})
-        
-        ex_model = train_ex(X_train, y_train, i)
-        y_true = encoder(ex_model, y_valid)
-        score = validate_model(ex_model, X_valid, y_true)
-        results.append({'score':score,'model':type(ex_model).__name__,'n_estimators':i})
-        
-        ada_model = train_ada(X_train, y_train, i)
-        y_true = encoder(ada_model, y_valid)
-        score = validate_model(ada_model, X_valid, y_true)
-        results.append({'score':score,'model':type(ada_model).__name__,'n_estimators':i})
-        
-        grad_model = train_grad(X_train, y_train, i)
-        y_true = encoder(grad_model, y_valid)
-        score = validate_model(grad_model, X_valid, y_true)
-        results.append({'score':score,'model':type(grad_model).__name__,'n_estimators':i})
-    
-        pd.DataFrame(results).to_csv('results\\results.csv')
+            print 'max_depth = {}, max_features = {}'.format(max_d, max_f)
+            rf_model = train_rf(X_train, y_train, n_est, max_d, max_f)
+            y_true = encoder(rf_model, y_valid)
+            score = validate_model(rf_model, X_valid, y_true)
+            results.append({'score':score,'model':type(rf_model).__name__,'n_estimators':650,'max_depth':max_d,'max_features':max_f})
+            
+            ex_model = train_ex(X_train, y_train, n_est, max_d, max_f)
+            y_true = encoder(ex_model, y_valid)
+            score = validate_model(ex_model, X_valid, y_true)
+            results.append({'score':score,'model':type(ex_model).__name__,'n_estimators':650,'max_depth':max_d,'max_features':max_f})
+            
+        #    grad_model = train_grad(X_train, y_train, i)
+        #    y_true = encoder(grad_model, y_valid)
+        #    score = validate_model(grad_model, X_valid, y_true)
+        #    results.append({'score':score,'model':type(grad_model).__name__,'n_estimators':i})
+        #
+            pd.DataFrame(results).to_csv('results\\results4.csv')
         
     #make_submission(rf, encoder)
     print(" - Finished.")
